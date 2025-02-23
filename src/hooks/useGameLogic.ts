@@ -25,10 +25,11 @@ export const useGameLogic = (playerName: string) => {
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [gameStats, setGameStats] = useState<GameStats>(initialGameStats);
 
-  const moleInterval = useRef<number>();
-  const powerUpTimeout = useRef<number>();
+  // Fixed: Initialize useRef with null
+  const moleInterval = useRef<number | null>(null);
+  const powerUpTimeout = useRef<number | null>(null);
 
-  // Load persisted data on mount
+  // Rest of the code remains the same
   useEffect(() => {
     const savedScores = localStorage.getItem('highScores');
     if (savedScores) {
@@ -171,9 +172,9 @@ export const useGameLogic = (playerName: string) => {
     }, 1000);
 
     return () => {
-      clearInterval(moleInterval.current);
+      if (moleInterval.current) clearInterval(moleInterval.current);
+      if (powerUpTimeout.current) clearTimeout(powerUpTimeout.current);
       clearInterval(timer);
-      clearTimeout(powerUpTimeout.current);
     };
   }, [isPlaying, gameState.difficulty, gameState.activePowerUp, updateStats, updateHighScores]);
 
