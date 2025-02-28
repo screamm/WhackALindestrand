@@ -1,3 +1,5 @@
+// /src/hooks/useGameLogic.ts
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { GameState, PowerUp, Difficulty, HighScore, GameStats } from '../types';
 import { GAME_SETTINGS, POWER_UPS } from '../constants';
@@ -21,15 +23,17 @@ export const useGameLogic = (playerName: string) => {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeMole, setActiveMole] = useState<number>(-1);
+  const [hitMole, setHitMole] = useState<number>(-1); // Spårar vilken mole som träffades
   const [hitState, setHitState] = useState<boolean>(false);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [gameStats, setGameStats] = useState<GameStats>(initialGameStats);
 
-  // Fixed: Initialize useRef with null
+  // Refs för att hantera timers
   const moleInterval = useRef<number | null>(null);
   const powerUpTimeout = useRef<number | null>(null);
+  const hitTimeout = useRef<number | null>(null);
 
-  // Rest of the code remains the same
+  // Ladda highscores och statistik
   useEffect(() => {
     const savedScores = localStorage.getItem('highScores');
     if (savedScores) {
@@ -54,6 +58,7 @@ export const useGameLogic = (playerName: string) => {
     }
   }, [initialGameStats]);
 
+  // Uppdatera highscores
   const updateHighScores = useCallback((score: number) => {
     setHighScores((prev: HighScore[]) => {
       const newScores = [...prev, { 
@@ -62,13 +67,14 @@ export const useGameLogic = (playerName: string) => {
         date: new Date().toISOString() 
       }]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Keep only top 10 scores
+      .slice(0, 10); // Behåll bara de 10 bästa
       
       localStorage.setItem('highScores', JSON.stringify(newScores));
       return newScores;
     });
   }, [playerName]);
 
+  // Uppdatera statistik
   const updateStats = useCallback((finalScore: number, finalStreak: number) => {
     setGameStats((prev: GameStats) => {
       const newStats = {
@@ -82,6 +88,7 @@ export const useGameLogic = (playerName: string) => {
     });
   }, []);
 
+  // Aktivera powerup
   const activatePowerUp = useCallback((type: PowerUp['type']) => {
     const powerUp = POWER_UPS[type];
     setGameState((prev: GameState) => ({
@@ -99,6 +106,10 @@ export const useGameLogic = (playerName: string) => {
         timeLeft: prev.timeLeft + 5
       }));
     } else {
+      if (powerUpTimeout.current) {
+        clearTimeout(powerUpTimeout.current);
+      }
+      
       powerUpTimeout.current = window.setTimeout(() => {
         setGameState((prev: GameState) => ({
           ...prev,
@@ -108,9 +119,11 @@ export const useGameLogic = (playerName: string) => {
     }
   }, []);
 
+  // Hantera träff
   const handleMoleHit = useCallback((index: number) => {
     if (index !== activeMole || !isPlaying) return;
 
+    // Beräkna poäng
     const difficultySettings = GAME_SETTINGS.DIFFICULTY_SETTINGS[gameState.difficulty];
     let points = difficultySettings.points;
     
@@ -118,47 +131,70 @@ export const useGameLogic = (playerName: string) => {
       points *= 2;
     }
 
+    // Uppdatera poäng och streak
     setGameState((prev: GameState) => ({
       ...prev,
       score: prev.score + points,
       streak: prev.streak + 1
     }));
 
+    // Sätt hitState och hitMole
     setHitState(true);
+    setHitMole(index);
+    
+    // Gör den nuvarande mole-positionen inaktiv omedelbart men behåll hitMole
     setActiveMole(-1);
+    
+    // Rensa eventuell tidigare hit timeout
+    if (hitTimeout.current) {
+      clearTimeout(hitTimeout.current);
+    }
+    
+    // Schemalägg återställning av hit state
+    hitTimeout.current = window.setTimeout(() => {
+      setHitState(false);
+      setHitMole(-1);
+    }, 500); // Visa träffbilden i 2 sekunder
 
-    // Random powerup chance
+    // Chans för powerup
     if (Math.random() < GAME_SETTINGS.POWERUP_CHANCE) {
       const powerUpTypes = Object.keys(POWER_UPS) as PowerUp['type'][];
       const randomPowerUp = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
       activatePowerUp(randomPowerUp);
     }
-
-    setTimeout(() => {
-      setHitState(false);
-    }, GAME_SETTINGS.HIT_DISPLAY_DURATION);
   }, [activeMole, isPlaying, gameState.difficulty, gameState.activePowerUp, activatePowerUp]);
 
+  // Starta spel
   const startGame = useCallback((difficulty: Difficulty) => {
     setIsPlaying(true);
     setGameState({
       ...initialGameState,
       difficulty
     });
+    
+    // Återställ states
+    setActiveMole(-1);
+    setHitMole(-1);
+    setHitState(false);
   }, [initialGameState]);
 
+  // Hantera mole-aktivering och timers
   useEffect(() => {
     if (!isPlaying) return;
 
+    // Beräkna hastighet
     const difficultySettings = GAME_SETTINGS.DIFFICULTY_SETTINGS[gameState.difficulty];
     const speed = gameState.activePowerUp?.type === 'slowMotion' 
       ? difficultySettings.moleSpeed * 1.5 
       : difficultySettings.moleSpeed;
 
+    // Intervall för nya moles
     moleInterval.current = window.setInterval(() => {
+      // Aktivera ny mole oberoende av hitState
       setActiveMole(Math.floor(Math.random() * GAME_SETTINGS.MOLE_COUNT));
     }, speed);
 
+    // Timer för nedräkning
     const timer = setInterval(() => {
       setGameState((prev: GameState) => {
         if (prev.timeLeft <= 1) {
@@ -171,9 +207,11 @@ export const useGameLogic = (playerName: string) => {
       });
     }, 1000);
 
+    // Cleanup
     return () => {
       if (moleInterval.current) clearInterval(moleInterval.current);
       if (powerUpTimeout.current) clearTimeout(powerUpTimeout.current);
+      if (hitTimeout.current) clearTimeout(hitTimeout.current);
       clearInterval(timer);
     };
   }, [isPlaying, gameState.difficulty, gameState.activePowerUp, updateStats, updateHighScores]);
@@ -182,6 +220,7 @@ export const useGameLogic = (playerName: string) => {
     gameState,
     isPlaying,
     activeMole,
+    hitMole,
     hitState,
     highScores,
     gameStats,
