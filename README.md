@@ -1,50 +1,59 @@
-# React + TypeScript + Vite
+# Whack-A-Lindestrand
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ett "Whack-A-Mole"-spel byggt med React, TypeScript och Vite, där målet är att träffa bilder på Alicia och Alexander så snabbt som möjligt.
 
-Currently, two official plugins are available:
+## Skärmdump
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![Skärmdump av spelet](screenshot.png)
 
-## Expanding the ESLint configuration
+## Funktioner
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+*   **Spelmekanik:** Träffa mullvadarna (Alicia/Alexander) som slumpmässigt dyker upp i ett 3x3-rutnät.
+*   **Poängsystem:** Få poäng för varje träff. Svårighetsgraden påverkar poängen per träff.
+*   **Streak:** Bygg upp en streak genom att träffa flera mullvadar i rad för bonuspoäng (framtida funktion).
+*   **Tidsgräns:** Spelet har en tidsgräns (standard 30 sekunder).
+*   **Power-ups:** Samla power-ups slumpmässigt under spelets gång:
+    *   ✨ Dubbla poäng
+    *   ⏰ Slow motion (mullvadarna rör sig långsammare)
+    *   ⌛ Extra tid (+5 sekunder)
+*   **Svårighetsgrader:** Välj mellan Lätt, Normal och Svår, vilket påverkar mullvadarnas hastighet och poäng.
+*   **Karaktärsval:** Spela med enbart Alicia, enbart Alexander, eller båda blandat.
+*   **High Scores:** Spelet sparar de 10 bästa poängen lokalt i webbläsaren.
+*   **Spelstatistik:** Håller reda på totalt antal spel, total poäng, bästa poäng och längsta streak lokalt.
+*   **Ljud & Vibration:** Ljudeffekter vid träffar, power-ups, start och slut. Vibration vid träff (om enheten stödjer det).
+*   **Animationer:** Använder Framer Motion för smidiga animationer och `canvas-confetti` för konfetti vid träffar.
+*   **Responsiv design:** Anpassar sig till olika skärmstorlekar.
 
-- Configure the top-level `parserOptions` property like this:
+## Teknologier
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+*   **Frontend:** React, TypeScript
+*   **Byggverktyg:** Vite
+*   **Styling:** Tailwind CSS
+*   **Animationer:** Framer Motion, Canvas Confetti
+*   **Linting/Formatering:** ESLint
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Hur man kör projektet
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+1.  **Klona repot (om du inte redan gjort det):**
+    ```bash
+    git clone <repo-url>
+    cd WhackALindestrand
+    ```
+2.  **Installera beroenden:**
+    ```bash
+    npm install
+    # eller yarn install / pnpm install
+    ```
+3.  **Starta utvecklingsservern:**
+    ```bash
+    npm run dev
+    # eller yarn dev / pnpm dev
+    ```
+4.  Öppna webbläsaren och gå till den lokala adressen som anges i terminalen (oftast `http://localhost:5173`).
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Tillgängliga skript
+
+*   `npm run dev`: Startar utvecklingsservern med Hot Module Replacement (HMR).
+*   `npm run build`: Bygger applikationen för produktion till `dist`-mappen.
+*   `npm run lint`: Kör ESLint för att hitta och fixa problem i koden.
+*   `npm run preview`: Startar en lokal server för att förhandsgranska produktionsbygget.
